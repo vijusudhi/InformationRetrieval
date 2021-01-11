@@ -5,8 +5,8 @@ How to run the application?
 1. Download dataset
 
 Option 1 - 
-- Download the file 'Wikipedia_topics' (https://drive.google.com/file/d/16FDx3lsEutw41FGJZEhencAEIBOIMBkv/view?usp=sharing) and paste it in the folder 'Wikepedia_topics'.
-- Run download.py
+- Download the file 'Wikipedia_topics' (https://drive.google.com/file/d/16FDx3lsEutw41FGJZEhencAEIBOIMBkv/view?usp=sharing) and paste it in the folder 'Wikipedia_topics'.
+- Run the python script 'download.py'.
 - This will create Topicx sub-folders in the folder 'dataset'.
 
 Option 2 - 
