@@ -95,8 +95,7 @@ public class IndexFiles {
 
             String modified = new SimpleDateFormat("MM/dd/yyyy-HH:mm:ss").format(lastModified);
             doc.add(new StringField("modified", modified, Field.Store.YES));
-
-            doc.add(new TextField("contents", new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))));
+            doc.add(new TextField("contents", new String(Files.readAllBytes(file)), Field.Store.YES));
 
             String fileLowerCaseName = file.toString().toLowerCase();
 

@@ -2,6 +2,7 @@ package com.example.informationretrieval;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.en.EnglishAnalyzer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -12,12 +13,21 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.search.highlight.Formatter;
+import org.apache.lucene.search.highlight.Fragmenter;
+import org.apache.lucene.search.highlight.Highlighter;
+import org.apache.lucene.search.highlight.QueryScorer;
+import org.apache.lucene.search.highlight.SimpleHTMLFormatter;
+import org.apache.lucene.search.highlight.SimpleSpanFragmenter;
+import org.apache.lucene.search.highlight.TokenSources;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.nio.charset.StandardCharsets;
 
 
 /** Simple command-line based search. */
@@ -42,11 +52,30 @@ public class SearchFiles {
 
         Pattern pattern = Pattern.compile("Topic[0-9]{1,}");
 
+        //Uses HTML &lt;B&gt;&lt;/B&gt; tag to highlight the searched terms
+        Formatter formatter = new SimpleHTMLFormatter();
+
+        //It scores text fragments by the number of unique query terms found
+        //Basically the matching score in layman terms
+        QueryScorer scorer = new QueryScorer(query);
+
+        //used to markup highlighted terms found in the best sections of a text
+        Highlighter highlighter = new Highlighter(formatter, scorer);
+
+        //It breaks text up into same-size texts but does not split up spans
+        Fragmenter fragmenter = new SimpleSpanFragmenter(scorer, 10);
+
+        //breaks text up into same-size fragments with no concerns over spotting sentence boundaries.
+        //Fragmenter fragmenter = new SimpleFragmenter(10);
+
+        //set fragmenter to highlighter
+        highlighter.setTextFragmenter(fragmenter);
+
         int rank = 1;
         for(ScoreDoc hit : hits) {
+            int docid = hit.doc;
             Document doc = searcher.doc(hit.doc);
             String path = doc.get("path");
-
 
             Matcher matches = pattern.matcher(path);
 
@@ -77,6 +106,23 @@ public class SearchFiles {
 
             System.out.println(rank + "\t" + topicId + "\t\t" +path + "\t\t" + imageFilePath + "\t\t" + hit.score);
             rank += 1;
+
+
+            //Get stored text from found document
+            String text = doc.get("contents");
+
+            //Create token stream
+            TokenStream stream = TokenSources.getAnyTokenStream(reader, docid, "contents", analyzer);
+
+            //Get highlighted text fragments
+            String[] frags = highlighter.getBestFragments(stream, text, 10);
+            for (String frag : frags)
+            {
+                System.out.println(frag);
+            }
+            System.out.println("=====================================================================");
+
+
         }
 
         reader.close();
