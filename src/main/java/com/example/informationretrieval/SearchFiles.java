@@ -1,49 +1,51 @@
 package com.example.informationretrieval;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.en.EnglishAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.en.EnglishAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.*;
+import org.apache.lucene.search.highlight.*;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.search.highlight.Formatter;
-import org.apache.lucene.search.highlight.Fragmenter;
-import org.apache.lucene.search.highlight.Highlighter;
-import org.apache.lucene.search.highlight.QueryScorer;
-import org.apache.lucene.search.highlight.SimpleHTMLFormatter;
-import org.apache.lucene.search.highlight.SimpleSpanFragmenter;
-import org.apache.lucene.search.highlight.TokenSources;
 
 import java.io.File;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.nio.charset.StandardCharsets;
 
 
 /** Simple command-line based search. */
 public class SearchFiles {
-    public static void main(String sQuery, String docsPath) throws Exception {
-        String index = "index";
+    public static void main(String sQuery, String datasetPath) throws Exception {
+        String indexPath = datasetPath + "/index";
         String field = "contents";
 
-        IndexReader reader = DirectoryReader.open(FSDirectory.open(Paths.get(index)));
+        IndexReader reader = DirectoryReader.open(FSDirectory.open(Paths.get(indexPath)));
         IndexSearcher searcher = new IndexSearcher(reader);
         Analyzer analyzer = new EnglishAnalyzer();
 
         QueryParser parser = new QueryParser(field, analyzer);
-
         Query query = parser.parse(sQuery);
-        System.out.println("Searching for: " + query.toString(field));
+
+        // PhraseQuery query = new PhraseQuery();
+        // query.setSlop(0);
+
+        PhraseQuery.Builder builder = new PhraseQuery.Builder();
+        String[] sQueryparts = sQuery.split(" ");
+
+        for(String word: sQueryparts) {
+            builder.add(new Term(field, word));
+        }
+
+        //PhraseQuery query = builder.build();
+
+        // System.out.println("Searching for: " + query.toString(field));
 
         searcher.setSimilarity( new BM25Similarity() );
 
@@ -66,7 +68,7 @@ public class SearchFiles {
         Fragmenter fragmenter = new SimpleSpanFragmenter(scorer, 10);
 
         //breaks text up into same-size fragments with no concerns over spotting sentence boundaries.
-        //Fragmenter fragmenter = new SimpleFragmenter(10);
+        // Fragmenter fragmenter = new SimpleFragmenter(10);
 
         //set fragmenter to highlighter
         highlighter.setTextFragmenter(fragmenter);
@@ -76,16 +78,18 @@ public class SearchFiles {
             int docid = hit.doc;
             Document doc = searcher.doc(hit.doc);
             String path = doc.get("path");
+            File txtFile = new File(path);
+            String txtFileName = txtFile.getName();
+            String txtResult1 = txtFileName.replaceAll("[+.^:,$']","");
+            String txtResult2 = txtResult1.replaceAll("_"," ");
+            String txtResult = txtResult2.replace("txt","");
 
             Matcher matches = pattern.matcher(path);
-
             String topicId = "";
             if (matches.find()) {
                 topicId = matches.group(0);
             }
-
-            String topicPath = docsPath + "/" + topicId + "/";
-            Path docDir = Paths.get(topicPath);
+            String topicPath = datasetPath + "/" + topicId + "/";
 
             String imagePath = "";
             File folder = new File(topicPath);
@@ -104,7 +108,7 @@ public class SearchFiles {
             String imageFile = topicPath + "/" + imagePath;
             Path imageFilePath = Paths.get(imageFile);
 
-            System.out.println(rank + "\t" + topicId + "\t\t" +path + "\t\t" + imageFilePath + "\t\t" + hit.score);
+            System.out.println(rank + "\t" + topicId + "\t\t" + txtResult + "\t\t" + imageFilePath + "\t\t" + hit.score);
             rank += 1;
 
 

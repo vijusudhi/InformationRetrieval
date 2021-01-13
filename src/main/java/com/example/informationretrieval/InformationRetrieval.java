@@ -18,25 +18,42 @@ import java.util.List;
 
 public class InformationRetrieval {
     public static void main(String[] args) throws IOException{
-        String indexPath = "index";
-        String docsPath = "dataset";
-        String currPath = System.getProperty("user.dir");
+        String usage = "java -jar InformationRetrieval.jar"
+                + " [-DATASET_PATH] [-QUERY]\n\n"
+                + "[-DATASET_PATH] Path of the dataset\n"
+                + "[-QUERY] Search query";
 
-        docsPath = currPath + "/" + docsPath;
+        int n = args.length;
+        if (n != 2) {
+            System.out.println("Invalid number of arguments provided");
+            System.err.println("Usage: " + usage);
+        } else {
+            String datasetPath = args[0];
+            String sQuery = args[1];
 
-        boolean runIndexing = false;
+            if (datasetPath.length() == 0 || datasetPath.isEmpty() || sQuery.length() == 0 || sQuery.isEmpty()) {
+                System.err.println("[-DATASET_PATH] and [-QUERY] should not be empty.");
+                System.err.println("Usage: " + usage);
+                System.exit(1);
+            }
 
-        if (runIndexing) {
-            IndexFiles.main(docsPath, indexPath);
-        }
+            System.out.println("Path of dataset: " + datasetPath);
+            System.out.println("Query: " + sQuery);
 
-        String sQuery = "film";
+            String indexPath = datasetPath + "/index";
 
-        try {
-            SearchFiles.main(sQuery, docsPath);
-        } catch (Exception e) {
-            System.out.println("Invalid search input received. Enter search query only when 'Enter query: ' is prompted");
-            e.printStackTrace();
+            boolean runIndexing = true;
+
+            if (runIndexing) {
+                IndexFiles.main(datasetPath, indexPath);
+            }
+
+            try {
+                SearchFiles.main(sQuery, datasetPath);
+            } catch (Exception e) {
+                System.out.println("Invalid search input received.");
+                e.printStackTrace();
+            }
         }
     }
 }

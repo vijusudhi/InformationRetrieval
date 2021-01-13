@@ -1,3 +1,6 @@
 Manifest-Version: 1.0
-Main-Class: InformationRetrieval
+Main-Class: com.example.informationretrieval.InformationRetrieval
+Class-Path: lucene-queryparser-8.3.0.jar lucene-memory-8.3.0.jar jsoup-1
+ .13.1.jar lucene-core-8.3.0.jar lucene-highlighter-8.3.0.jar lucene-ana
+ lyzers-common-8.3.0.jar
 

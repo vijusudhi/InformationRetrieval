@@ -31,7 +31,6 @@ import org.jsoup.Jsoup;
 
 public class IndexFiles {
     public static void main(String docsPath, String indexPath) {
-
         final Path docDir = Paths.get(docsPath);
         if (!Files.isReadable(docDir)) {
             System.out.println("Document directory '" +docDir.toAbsolutePath()+ "' does not exist or is not readable, please check the path");
@@ -40,7 +39,7 @@ public class IndexFiles {
 
         Date start = new Date();
         try {
-            System.out.println("Indexing to directory '" + indexPath + "' in the current working directory");
+            System.out.println("Indexing to directory: " + indexPath);
             Directory dir = FSDirectory.open(Paths.get(indexPath));
             Analyzer analyzer = new EnglishAnalyzer();
             IndexWriterConfig iwc = new IndexWriterConfig(analyzer);
@@ -53,7 +52,7 @@ public class IndexFiles {
             writer.close();
 
             Date end = new Date();
-            System.out.println(end.getTime() - start.getTime() + " total milliseconds");
+            //System.out.println(end.getTime() - start.getTime() + " total milliseconds");
         } catch (IOException e) {
             System.out.println(" caught a " + e.getClass() +
                     "\n with message: " + e.getMessage());
@@ -73,8 +72,6 @@ public class IndexFiles {
                         } catch (IOException ignore) {
                             // don't index files that can't be read.
                         }
-                    } else {
-                        System.out.println("Invalid File: " + file.toString() + " will not be indexed");
                     }
                     return FileVisitResult.CONTINUE;
                 }
@@ -99,7 +96,7 @@ public class IndexFiles {
 
             String fileLowerCaseName = file.toString().toLowerCase();
 
-            System.out.println("adding " + file);
+            // System.out.println("adding " + file);
             writer.addDocument(doc);
 
     }
