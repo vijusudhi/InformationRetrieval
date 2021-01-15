@@ -33,9 +33,6 @@ public class SearchFiles {
         QueryParser parser = new QueryParser(field, analyzer);
         Query query = parser.parse(sQuery);
 
-        // PhraseQuery query = new PhraseQuery();
-        // query.setSlop(0);
-
         PhraseQuery.Builder builder = new PhraseQuery.Builder();
         String[] sQueryparts = sQuery.split(" ");
 
@@ -43,38 +40,23 @@ public class SearchFiles {
             builder.add(new Term(field, word));
         }
 
-        //PhraseQuery query = builder.build();
-
-        // System.out.println("Searching for: " + query.toString(field));
-
         searcher.setSimilarity( new BM25Similarity() );
-
         TopDocs results = searcher.search(query, 10);
         ScoreDoc[] hits = results.scoreDocs;
 
-        Pattern pattern = Pattern.compile("Topic[0-9]{1,}");
-
-        //Uses HTML &lt;B&gt;&lt;/B&gt; tag to highlight the searched terms
         Formatter formatter = new SimpleHTMLFormatter();
-
-        //It scores text fragments by the number of unique query terms found
-        //Basically the matching score in layman terms
         QueryScorer scorer = new QueryScorer(query);
-
-        //used to markup highlighted terms found in the best sections of a text
         Highlighter highlighter = new Highlighter(formatter, scorer);
-
-        //It breaks text up into same-size texts but does not split up spans
-        Fragmenter fragmenter = new SimpleSpanFragmenter(scorer, 10);
-
-        //breaks text up into same-size fragments with no concerns over spotting sentence boundaries.
-        // Fragmenter fragmenter = new SimpleFragmenter(10);
-
-        //set fragmenter to highlighter
+        Fragmenter fragmenter = new SimpleSpanFragmenter(scorer, 100);
         highlighter.setTextFragmenter(fragmenter);
 
+        Pattern pattern = Pattern.compile("Topic[0-9]{1,}");
+
         int rank = 1;
+        int hitCount = 0;
+
         for(ScoreDoc hit : hits) {
+            hitCount += 1;
             int docid = hit.doc;
             Document doc = searcher.doc(hit.doc);
             String path = doc.get("path");
@@ -98,8 +80,10 @@ public class SearchFiles {
             for (File file : listOfFiles) {
                 if (file.isFile()) {
                     String fileName = file.getName();
-                    if ((fileName.endsWith(".jpg")) || (fileName.endsWith(".gif")) ||
-                            (fileName.endsWith(".png")) || (fileName.endsWith(".jpeg"))) {
+                    if ( (fileName.endsWith(".jpg")) || (fileName.endsWith(".gif")) ||
+                            (fileName.endsWith(".png")) || (fileName.endsWith(".jpeg")) ||
+                            (fileName.endsWith(".JPG")) || (fileName.endsWith(".GIF")) ||
+                            (fileName.endsWith(".PNG")) || (fileName.endsWith(".JPEG")) ) {
                         imagePath = fileName;
                     }
                 }
@@ -108,25 +92,24 @@ public class SearchFiles {
             String imageFile = topicPath + "/" + imagePath;
             Path imageFilePath = Paths.get(imageFile);
 
-            System.out.println(rank + "\t" + topicId + "\t\t" + txtResult + "\t\t" + imageFilePath + "\t\t" + hit.score);
+            System.out.println(rank + "\t" + "\t\t" + txtResult + "\t\t" + imageFilePath + "\t\t" + hit.score);
             rank += 1;
 
-
-            //Get stored text from found document
             String text = doc.get("contents");
 
-            //Create token stream
             TokenStream stream = TokenSources.getAnyTokenStream(reader, docid, "contents", analyzer);
 
-            //Get highlighted text fragments
-            String[] frags = highlighter.getBestFragments(stream, text, 10);
-            for (String frag : frags)
+            TextFragment[] frags = highlighter.getBestTextFragments(stream, text, true,10);
+            for (TextFragment frag : frags)
             {
-                System.out.println(frag);
+                System.out.println(frag.toString());
             }
+
             System.out.println("=====================================================================");
+        }
 
-
+        if (hitCount == 0) {
+            System.out.println("No results found for your search query!");
         }
 
         reader.close();
