@@ -1,37 +1,71 @@
+"""
+-------------------------
+Download Wikipedia Topics
+-------------------------
+Modified by: Los Azules
+
+This script downloads the dataset to the path "curr_path/dataset".
+
+Usage: 
+    download.py [-TOPICS_PATH] [-NUM_OF_TOPICS]
+    [-TOPICS_PATH] Path of the file Wikipedia_topics
+    [-NUM_OF_TOPICS] Number of topics. Pass an integer value
+
+Note:
+    - Wikepedia topics having at least one image file will be downloaded.
+    - Topics with special characters "\"!" are not downloaded.
+    - Topics will not be overwritten if they already exist.
+
+--------------------------------------------------------------------------
+"""
+
+print(__doc__)
+
 import requests
 import re
-# import the os module
+import sys
 import os
 
-# detect the current working directory and print it
+num = len(sys.argv)
+if num < 3:
+    print("[ERR] Enter all arguments as per the usage.")
+    exit(0)
+    
+topics_path = str(sys.argv[1])
+
+try:
+    file = open(topics_path, "r", encoding="utf8")
+except:
+    print("[ERR] Input file can not be read")
+    exit(0)
+    
+try:
+    num_of_topics = int(sys.argv[2])
+except:
+    print("[ERR] Number of topics is not an integer")
+    exit(0)
+    
 curr_path = os.getcwd()
-print ("The current working directory is %s" % curr_path)
+print ("[INF] Current working directory is", curr_path)
+print("[INF] Topics path:", topics_path)
+print("[INF] Number of topics:", num_of_topics)
+print("--------------------------------------------------------------------------")
 
-
-#the program extracts text and image data for a given topic
-#and writes them in the CURRENT DIRECTORY, relative to the location the py script is invoked from
-#make sure you set it properly, in case you dont want the default one
-
-
-file = open("Wikipedia_topics/Wikipedia_topics.txt", "r", encoding="utf8")
 lines = file.readlines()
-
 special_characters = "\"!"
-
-NUM_OF_TOPICS = 5
 
 ind = 1
 for i in lines:
-    if ind != NUM_OF_TOPICS:
+    if (ind-1) != num_of_topics:
         #this is the title we will search
         topic = re.sub("\"", "", i)
         topic = topic.strip()
         
         if (any(c in special_characters for c in topic)):
-            print("Skipping", topic)
+            print("[INF] Skipping", topic)
             continue
         else:
-            print("Crawling", topic)
+            print("[INF] Trying to crawl", topic)
 
 
         #this is the config for to get the first introduction of a title
@@ -52,7 +86,7 @@ for i in lines:
             pid = text_page['pageid']
             # # print(ex)
         except KeyError:
-            print("Key error")
+            print("[ERR] No 'extract' field. Skipping topic.")
             continue
             
         if text_page['extract'] != '':
@@ -83,7 +117,7 @@ for i in lines:
                 im = image_page['images']
                 # # print(ex)
             except KeyError:
-                print("Key error images")
+                print("[ERR] No 'images' field. Skipping topic.")
                 continue
                 
                 
@@ -104,16 +138,21 @@ for i in lines:
                     imCount += 1
                     
             if imCount != 0:
-                path = curr_path+"/Topic"+str(ind)
+                try:
+                    os.mkdir(curr_path + "/dataset")
+                except OSError:
+                    print ("[ERR] Creation of the directory %s failed" % (curr_path + "\dataset"))
+                
+                path = curr_path+"\dataset\Topic"+str(ind)
                 ind += 1
                 try:
                     os.mkdir(path)
                 except OSError:
-                    print ("Creation of the directory %s failed" % path)
+                    print ("[ERR] Creation of the directory %s failed" % path)
                 else:
-                    print ("Successfully created the directory %s " % path)
+                    print ("[INF] Successfully crawled to directory %s " % path)
             else:
-                print("Im count 0")
+                print("[ERR] No images found. Skipping topic.")
                 continue
                 
             
@@ -125,7 +164,7 @@ for i in lines:
             #and we  write the image files one by one in the currect directory
             #we also dont write the svg files, since as they are mostly the logos
             #modily the filename_pattern regex for to accept the proper files
-            print("writing files")
+            # print("writing files")
             filename_pattern = re.compile(".*\.(?:jpe?g|gif|png|JPE?G|GIF|PNG)")
             for i in range(len(image_page['images'])):
                 url_config = {
@@ -139,7 +178,7 @@ for i in lines:
                 url_page = next(iter(url_response['query']['pages'].values()))
                 #print(url_page['imageinfo'][0]['url'])
                 if(filename_pattern.search(url_page['imageinfo'][0]['url'])):
-                    print("writing image "+url_page['imageinfo'][0]['url'].rsplit("/",1)[1])
+                    # print("writing image "+url_page['imageinfo'][0]['url'].rsplit("/",1)[1])
                     with open(path + "/" + url_page['imageinfo'][0]['url'].rsplit("/",1)[1], 'wb') as handle:
                         response = requests.get(url_page['imageinfo'][0]['url'], stream=True)
 
@@ -151,7 +190,6 @@ for i in lines:
                                 break
 
                             handle.write(block)
-
 
 #************************************references*******************************************************************
 #https://www.mediawiki.org/wiki/API:Parsing_wikitext
