@@ -33,13 +33,6 @@ public class SearchFiles {
         QueryParser parser = new QueryParser(field, analyzer);
         Query query = parser.parse(sQuery);
 
-        PhraseQuery.Builder builder = new PhraseQuery.Builder();
-        String[] sQueryparts = sQuery.split(" ");
-
-        for(String word: sQueryparts) {
-            builder.add(new Term(field, word));
-        }
-
         searcher.setSimilarity( new BM25Similarity() );
         TopDocs results = searcher.search(query, 10);
         ScoreDoc[] hits = results.scoreDocs;

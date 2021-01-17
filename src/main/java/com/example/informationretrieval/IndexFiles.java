@@ -11,9 +11,7 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Date;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.en.EnglishAnalyzer;
-import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
@@ -21,13 +19,8 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.jsoup.Jsoup;
-
-
-// Index files in a single directory stored at the location where the command is run from the command line
 
 public class IndexFiles {
     public static void main(String docsPath, String indexPath) {
@@ -37,7 +30,6 @@ public class IndexFiles {
             System.exit(1);
         }
 
-        Date start = new Date();
         try {
             System.out.println("Indexing to directory: " + indexPath);
             Directory dir = FSDirectory.open(Paths.get(indexPath));
@@ -51,8 +43,6 @@ public class IndexFiles {
 
             writer.close();
 
-            Date end = new Date();
-            //System.out.println(end.getTime() - start.getTime() + " total milliseconds");
         } catch (IOException e) {
             System.out.println(" caught a " + e.getClass() +
                     "\n with message: " + e.getMessage());
@@ -83,20 +73,12 @@ public class IndexFiles {
 
     /** Indexes a single document */
     public static void indexDoc(IndexWriter writer, Path file, long lastModified) throws IOException {
-            InputStream stream = Files.newInputStream(file);
             Document doc = new Document();
 
             Field pathField = new StringField("path", file.toString(), Field.Store.YES);
             doc.add(pathField);
-
-
-            String modified = new SimpleDateFormat("MM/dd/yyyy-HH:mm:ss").format(lastModified);
-            doc.add(new StringField("modified", modified, Field.Store.YES));
             doc.add(new TextField("contents", new String(Files.readAllBytes(file)), Field.Store.YES));
 
-            String fileLowerCaseName = file.toString().toLowerCase();
-
-            // System.out.println("adding " + file);
             writer.addDocument(doc);
 
     }
